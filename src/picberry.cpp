@@ -43,6 +43,7 @@
 #include "devices/dspic33f.h"
 #include "devices/dspic33e.h"
 #include "devices/pic10f322.h"
+#include "devices/pic16f183xx.h"
 #include "devices/pic18fj.h"
 #include "devices/pic24fjxxxga0xx.h"
 #include "devices/pic24fjxxxga3xx.h"
@@ -50,6 +51,8 @@
 #include "devices/pic32.h"
 #include "devices/pic24fjxxxga1_gb1.h"
 #include "devices/pic24fxxka1xx.h"
+#include "devices/pic24fjxxxxgx6xx.h"
+#include "devices/pic24fxxklxxx.h"
 
 int                 mem_fd;
 void                *gpio_map;
@@ -257,9 +260,9 @@ int main(int argc, char *argv[])
             pic = new pic24fjxxxga1_gb1();
         else if(strcmp(family,"pic24fjxxxgb1xx") == 0)
             pic = new pic24fjxxxga1_gb1();
-	else if(strcmp(family,"pic24fxxka1xx") == 0)
+	    else if(strcmp(family,"pic24fxxka1xx") == 0)
             pic = new pic24fxxka1xx();
-	else if(strcmp(family,"pic32mx1") == 0)
+	    else if(strcmp(family,"pic32mx1") == 0)
             pic = new pic32(SF_PIC32MX1);
         else if(strcmp(family,"pic32mx2") == 0)
             pic = new pic32(SF_PIC32MX2);
@@ -268,26 +271,34 @@ int main(int argc, char *argv[])
         else if(strcmp(family,"pic32mz") == 0)
             pic = new pic32(SF_PIC32MZ);
         else if(strcmp(family,"pic32mk") == 0)
-            pic = new pic32(SF_PIC32MK);   
+            pic = new pic32(SF_PIC32MK);
+        else if(strcmp(family,"pic24fjxxxxgx6xx") == 0)
+            pic = new pic24fjxxxxgx6xx();
+        else if(strcmp(family,"pic16f183xx") == 0)
+            pic = new pic16f183xx();
+        else if(strcmp(family,"pic24fxxklxxx") == 0)
+            pic = new pic24fxxklxxx();
         else{
             cerr << "ERROR: PIC family not correctly chosen." << endl;
             cerr << "Available families:" << endl
-                 << "- dspic33e" << endl
-                 << "- pic24fj" << endl
-                 << "- pic24fjxxxga0xx" << endl
-                 << "- pic24fjxxxga3xx" << endl
-                 << "- pic24fjxxga1xx" << endl
-                 << "- pic24fjxxgb0xx" << endl 
-                 << "- pic24fjxxxga1xx" << endl
-                 << "- pic24fjxxxgb1xx" << endl
-		 << "- pic24fxxka1xx" << endl 
-		 << "- pic10f322" << endl
-                 << "- pic18fj" << endl
-                 << "- pic32mx1" << endl
-                 << "- pic32mx2" << endl
-                 << "- pic32mx3" << endl
-                 << "- pic32mz" << endl
-                 << "- pic32mk" << endl;
+                << "- dspic33e" << endl
+                << "- pic24fj" << endl
+                << "- pic24fjxxxga0xx" << endl
+                << "- pic24fjxxxga3xx" << endl
+                << "- pic24fjxxga1xx" << endl
+                << "- pic24fjxxgb0xx" << endl 
+                << "- pic24fjxxxga1xx" << endl
+                << "- pic24fjxxxgb1xx" << endl
+                << "- pic24fjxxxxgx6xx" << endl
+		        << "- pic24fxxka1xx" << endl 
+		        << "- pic10f322" << endl
+                << "- pic16f183xx" << endl
+                << "- pic18fj" << endl
+                << "- pic32mx1" << endl
+                << "- pic32mx2" << endl
+                << "- pic32mx3" << endl
+                << "- pic32mz" << endl
+                << "- pic32mk" << endl;
             goto clean;
         }
 
@@ -312,7 +323,7 @@ int main(int argc, char *argv[])
                 case FXN_WRITE:
                     cout << "Writing chip...";
                     pic->write(infile);
-                    cout << "DONE! " << endl;
+                    cout << "\nDONE! " << endl;
                     break;
                 case FXN_ERASE:
                 	cout << "Bulk Erase...";
@@ -480,6 +491,7 @@ void usage(void)
             "       pic24fjxxgb0xx \n"
             "       pic24fjxxxga1xx \n"
             "       pic24fjxxxgb1xx \n"
+            "       pic24fjxxxxgx6xx \n"
             "       pic32mx1    \n"
             "       pic32mx2    \n"
             "       pic32mx3    \n"
