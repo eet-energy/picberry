@@ -45,8 +45,8 @@
 #define DELAY_P13			1250		// 2ms
 #define DELAY_P14			1		// 1us MAX!
 #define DELAY_P15			1		// 10ns
-#define DELAY_P16			0		// 0s
-#define DELAY_P17   			0		// 0s
+#define DELAY_P16			1		// 0s
+#define DELAY_P17   			1		// 0s
 #define DELAY_P18			1000		// 40ns
 #define DELAY_P19			1000		// 1ms
 #define DELAY_P20			23		// 23us
@@ -206,13 +206,15 @@ bool pic24fxxklxxx::read_device_id(void)
 {
 	bool found = 0;
 
-
+	printf("Reading device ID");
+	printf("Send nop");
 
 	/* Exit Reset vector */
 	send_nop();
 	reset_pc();
 	send_nop();
 
+	printf("Configure registers");
 	/* Initialize TBLPAG and the Read Pointer (W6) for TBLRD instruction */
 	send_cmd(0x200FF0); // MOV #<SourceAddress23:16>, W0
 	send_cmd(0x880190); // MOV W0, TBLPAG
@@ -584,7 +586,8 @@ void pic24fxxklxxx::write(char *infile)
 
 	unsigned int filled_locations=1;
 
-	const char *regname[] = {"FBS","FGS","FOSCSEL","FOSC","FWDT","FPOR","FICD"};
+	const char *regname[] = {"FBS","FBS","FGS","FOSCSEL","FOSC","FWDT","FPOR","FICD"};
+	const char config_offsets[] = {0, 4, 6, 8, 10, 12, 14};
 	
 	filled_locations = read_inhx(infile, &mem);
 	if (!filled_locations) return;
@@ -718,6 +721,10 @@ void pic24fxxklxxx::write(char *infile)
 
 	addr = 0xF80000;
 
+	for (i = 0; i < 16; i++) {
+		fprintf(stderr,"\n  Writing 0x%04X to address 0x%06X ", mem.location[addr+i], addr+i);
+	}
+
 	/* Initialize the Write Pointer (W7) for TBLWT instruction */
 
 	/* Set the NVMCON to program 1 instruction word */
@@ -725,15 +732,19 @@ void pic24fxxklxxx::write(char *infile)
 	send_cmd(0x24004A); // MOV #0x4004, W10
 	send_cmd(0x883B0A); // MOV W10, NVMCON
 
-	for (i = 0; i < 7; i++) {
+	send_cmd(0x200F80); // MOV #0xF8, W6
+	send_cmd(0x880190);
+
+	for (i = 0; i < 8; i++) {
 		if (mem.filled[addr]) {
 			/* Initialize the Write Pointer (W7) for TBLWT instruction */
-			send_cmd(0x200000 | ((addr & 0x00FF0000) >> 12) ); // MOV #<CWxAddress23:16>, W0
-			send_cmd(0x880190);
-			send_cmd(0x200007 | ((addr & 0x0000FFFF) << 4) ); // MOV #<CWxAddress15:0>, W7
+			// send_cmd(0x200000 | ((addr & 0x00FF0000) >> 12) ); // MOV #<CWxAddress23:16>, W0
 
 			/* Load the Configuration register data to W6 */
 			send_cmd(0x200006 | ((0x0000FFFF & mem.location[addr]) << 4));
+			send_cmd(0x200007 | ((addr & 0x0000FFFF) << 4) ); // MOV #<CWxAddress15:0>, W7
+
+
 
 			/*
 			 * Write the Configuration register data to the write
@@ -762,9 +773,15 @@ void pic24fxxklxxx::write(char *infile)
 				send_nop();
 			} while ((nvmcon & 0x8000) == 0x8000);
 
+			reset_pc();
+			send_nop();
+
 			if(flags.debug)
+			{
+				fprintf(stderr, "\n Wrote to addr = 0x%06X data = 0x%04X", (addr), mem.location[addr]);
 				fprintf(stderr,"\n - %s set to 0x%01x",
 						regname[i], mem.location[addr]);
+			}
 		} else if(flags.debug) {
 			fprintf(stderr,"\n - %s left unchanged", regname[i]);
 		}
@@ -901,17 +918,17 @@ void pic24fxxklxxx::dump_configuration_registers(void)
 	 * for TBLRD instruction
 	 */
 
-	send_cmd(0x200000 | ((addr & 0x00FF0000) >> 12) ); // MOV #<DestAddress23:16>, W0
+	send_cmd(0x200F80); // MOV #0xF8, W0
 	send_cmd(0x880190); // MOV W0, TBLPAG
-	send_cmd(0x200006 | ((addr & 0x0000FFFF) << 4) ); // MOV #<DestAddress15:0>, W6
+	send_cmd(0x200007); // MOV #<DestAddress15:0>, W6
 	send_cmd(0x207847); // MOV #VISI, W7
 	send_nop();
 
-	for(unsigned short i=0; i < 8; i++) {
+	for(unsigned short i=0; i < 7; i++) {
 		send_cmd(0xBA0BB6); // TBLRDL [W6++], [W7]
 		send_nop();
 		send_nop();
-		fprintf(stderr," - %s: 0x%02x\n",regname[i], read_data());
+		fprintf(stderr," - %s: 0x%04x\n",regname[i], read_data());
 	}
 
 	cerr << endl;
