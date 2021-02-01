@@ -415,8 +415,10 @@ void close_io(void)
 {
         int ret;
         
-        /* MCLR as input, puts the output driver in Hi-Z */
+        /* Puts the output driver in Hi-Z */
         GPIO_IN(pic_mclr);
+        GPIO_IN(pic_data);
+        GPIO_IN(pic_clk);
 
         /* munmap GPIO */
         ret = munmap(gpio_map, BLOCK_SIZE);
