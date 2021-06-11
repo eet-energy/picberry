@@ -89,6 +89,7 @@ void pic24fxxklxxx::send_cmd(uint32_t cmd)
 		GPIO_CLR(pic_clk);
 	}
 
+	GPIO_CLR(pic_data);
 	delay_us(DELAY_P4A);
 }
 
