@@ -51,7 +51,7 @@
 #define DELAY_P18			1000	// 1ms
 #define DELAY_P19			1		// 25ns
 #define DELAY_P20			25000	// 25ms
-#define DELAY_P21			1		// 1us - 500us MAX!
+#define DELAY_P21			10		// 1us - 500us MAX!
 
 #define ENTER_PROGRAM_KEY	0x4D434851
 
@@ -90,6 +90,7 @@ void dspic33epxxgs50x::send_cmd(uint32_t cmd)
 		GPIO_CLR(pic_clk);
 	}
 
+	GPIO_CLR(pic_data);
 	delay_us(DELAY_P4A);
 
 }
@@ -192,6 +193,7 @@ void dspic33epxxgs50x::enter_program_mode(void)
 	delay_us(DELAY_P19);
 	GPIO_SET(pic_mclr);
 	delay_us(DELAY_P7);
+	delay_us(DELAY_P1*5);
 
 	/* idle for 5 clock cycles */
 	for (i = 0; i < 5; i++) {
@@ -229,12 +231,12 @@ bool dspic33epxxgs50x::read_device_id(void)
 	send_nop();
 
 	send_cmd(0x200FF0);
+	send_cmd(0x20F887);
 	send_cmd(0x8802A0);
 	send_cmd(0x200006);
-	send_cmd(0x20F887);
 	send_nop();
 
-	send_cmd(0xBA0BB6);
+	send_cmd(0xBA8B96);
 	send_nop();
 	send_nop();
 	send_nop();
@@ -242,18 +244,19 @@ bool dspic33epxxgs50x::read_device_id(void)
 	send_nop();
 	device_id = read_data();
 
-	send_cmd(0xBA0BB6);
+	send_cmd(0xBA0B96);
 	send_nop();
 	send_nop();
 	send_nop();
 	send_nop();
 	send_nop();
-	device_rev = read_data();
+
+	device_id = read_data();
 	
 	reset_pc();
 	send_nop();
 
-	for (unsigned short i=0;i < sizeof(piclist)/sizeof(piclist[0]);i++){
+	for (unsigned short i=0; i < sizeof(piclist)/sizeof(piclist[0]); i++) {
 
 		if (piclist[i].device_id == device_id){
 
@@ -416,6 +419,7 @@ uint8_t dspic33epxxgs50x::blank_check(void)
 /* Bulk erase the chip */
 void dspic33epxxgs50x::bulk_erase(void)
 {
+	if(flags.debug) cerr << "Erasing memory";
 
     send_nop();
     send_nop();
@@ -458,6 +462,7 @@ void dspic33epxxgs50x::bulk_erase(void)
 		send_nop();
 	} while((nvmcon & 0x8000) == 0x8000);
 	
+	if(flags.debug) cerr << "Finished erasing memory";
 	if(flags.client) fprintf(stdout, "@FIN");
 }
 
@@ -658,13 +663,15 @@ void dspic33epxxgs50x::write(char *infile)
 
 	unsigned int filled_locations=1;
 
-	const char *regname[] = {"FGS","FOSCSEL","FOSC","FWDT","FPOR",
-							"FICD","FAS","FUID0"};
+	const char *regname[] = {"FSEC","FBSLIM","FOSCSEL","FOSC","FWDT","FICD", "FDEVOPT", "FALTREG"};
+	const int config_addr[] = {0x005780, 0x005790, 0x005798, 0x00579C, 0x0057A0, 0x0057A8, 0x0057AC, 0x0057B0};
 
 	filled_locations = read_inhx(infile, &mem);
 	if(!filled_locations) return;
 
 	bulk_erase();
+
+	if(flags.debug) cerr << "Writing FBOOT register...\n";
 
 	/* Exit reset vector */
 	send_nop();
@@ -734,13 +741,16 @@ void dspic33epxxgs50x::write(char *infile)
 		send_nop();
 	} while((nvmcon & 0x8000) == 0x8000);
 
+	if(flags.debug) cerr << "Resetting device after FBOOT write...\n";
+
+	/***** RESET DEVICE to apply new boot table*****/
+	exit_program_mode();
+	delay_us(100);
+	enter_program_mode();
+
 	/****** WRITE CODE MEMORY ******/
 
-	// Reset the device 	
-	GPIO_CLR(pic_mclr);		/*  remove VDD from MCLR pin */
-	delay_us(DELAY_P6);
-	GPIO_SET(pic_mclr);		/*  apply VDD to MCLR pin */
-	delay_us(DELAY_P21);
+	if(flags.debug) cerr << "Writing program memory...\n";
 
 	/* Exit reset vector */
 	send_nop();
@@ -816,6 +826,8 @@ void dspic33epxxgs50x::write(char *infile)
 		send_nop();
 		send_nop();
 
+		addr = addr + 4;
+
 		do{
 			send_nop();
 			send_cmd(0x803940);
@@ -850,9 +862,6 @@ void dspic33epxxgs50x::write(char *infile)
 	if(flags.debug)
 		cerr << endl << "Writing Configuration registers..." << endl;
 
-	if(mem.code_memory_size == 0x00577E)
-	addr = 0x005780;
-
 	//  Exit the Reset vector.
 	send_nop();
 	send_nop();
@@ -866,15 +875,17 @@ void dspic33epxxgs50x::write(char *infile)
 	send_cmd(0x200FAC); // MOV #0xFA, W12
 	send_cmd(0x8802AC); // MOV W12, TBLPAG
 
-	for(i=0; i<8; i++){
+	for(i=0; i<8; i++)
+	{
+		addr = config_addr[i];
 
 		if(mem.filled[addr]){
 
 			/* Load W0:W1 with the next two Configuration Words to program. */
 			send_cmd(0x200000 | ((0x0000FFFF & mem.location[addr]) << 4));
 			send_cmd(0x200001 | ((mem.location[addr] & 0x00FF0000) >> 12) );
-			send_cmd(0x200002 | ((0x0000FFFF & mem.location[addr+1]) << 4));
-			send_cmd(0x200003 | ((mem.location[addr+1] & 0x00FF0000) >> 12) );
+			send_cmd(0x2FFFF2);//send_cmd(0x200002 | ((0x0000FFFF & mem.location[addr+1]) << 4));
+			send_cmd(0x2FFFF3);//send_cmd(0x200003 | ((mem.location[addr+1] & 0x00FF0000) >> 12) );
 
 			/* Set the Write Pointer (W3) and load the write latches.*/
 			send_cmd(0xEB0300);
@@ -893,8 +904,8 @@ void dspic33epxxgs50x::write(char *infile)
 			send_nop();
 
 			/* Set the NVMADRU/NVMADR register pair to point to the correct Configuration Word address */
-			send_cmd(0x200003 | ((addr & 0x0000FFFF) << 4) ); // MOV #<DestinationAddress15:0>, W3
-			send_cmd(0x200004 | ((addr & 0x00FF0000) >> 12) ); // MOV #<DestinationAddress23:16>, W4
+			send_cmd(0x200004 | ((addr & 0x0000FFFF) << 4) ); // MOV #<DestinationAddress15:0>, W3
+			send_cmd(0x200005 | ((addr & 0x00FF0000) >> 12) ); // MOV #<DestinationAddress23:16>, W4
 			send_cmd(0x883954);	//MOV W4, NVMADR
 			send_cmd(0x883965);	//MOV W5, NVMADRU
 
@@ -1079,7 +1090,6 @@ void dspic33epxxgs50x::write(char *infile)
 	else{
 		if(flags.client) fprintf(stdout, "@FIN");
 	}
-
 }
 
 /* write to screen the configuration registers, without saving them anywhere */

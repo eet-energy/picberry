@@ -53,6 +53,7 @@
 #include "devices/pic24fxxka1xx.h"
 #include "devices/pic24fjxxxxgx6xx.h"
 #include "devices/pic24fxxklxxx.h"
+#include "devices/dspic33epxxgs50x.h"
 
 int                 mem_fd;
 void                *gpio_map;
@@ -278,10 +279,13 @@ int main(int argc, char *argv[])
             pic = new pic16f183xx();
         else if(strcmp(family,"pic24fxxklxxx") == 0)
             pic = new pic24fxxklxxx();
+        else if(strcmp(family,"dspic33epxxgs50x") == 0)
+            pic = new dspic33epxxgs50x();
         else{
             cerr << "ERROR: PIC family not correctly chosen." << endl;
             cerr << "Available families:" << endl
                 << "- dspic33e" << endl
+                << "- dspic33epxxgs50x" << endl
                 << "- pic24fj" << endl
                 << "- pic24fjxxxga0xx" << endl
                 << "- pic24fjxxxga3xx" << endl

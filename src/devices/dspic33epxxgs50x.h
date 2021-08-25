@@ -25,12 +25,9 @@
 
 using namespace std;
 
-class dspic33epxxgs50x : public Pic{
+class dspic33epxxgs50x : public Pic {
 
 	public:
-		dspic33epxxgs50x(uint8_t sf){
-			subfamily=sf;
-		};
 		void enter_program_mode(void);
 		void exit_program_mode(void);
 		bool setup_pe(void){return true;};
@@ -50,5 +47,5 @@ class dspic33epxxgs50x : public Pic{
 		* DEVICES SECTION
 		*                       ID       NAME           	  MEMSIZE
 		*/
-		pic_device piclist[28] = {{0x1861, "dsPIC33EP32GS504", 0x00577E},};
+		pic_device piclist[3] = {{0x4E12, "dsPIC33EP32GS504", 0x00577E}};
 };

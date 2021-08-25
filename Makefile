@@ -12,6 +12,7 @@ BUILDDIR = build
 MKDIR = mkdir -p
 
 DEVICES = $(BUILDDIR)/devices/dspic33e.o \
+		  $(BUILDDIR)/devices/dspic33epxxgs50x.o \
 		  $(BUILDDIR)/devices/dspic33f.o \
 		  $(BUILDDIR)/devices/pic10f322.o \
 		  $(BUILDDIR)/devices/pic16f183xx.o \
