@@ -47,7 +47,7 @@
 #define DELAY_P14			1		// 1us MAX!
 #define DELAY_P15			1		// 10ns
 #define DELAY_P16			0		// 0s
-#define DELAY_P17   		0		// 0s - 100ns MAX!
+#define DELAY_P17   		10		// 100ns
 #define DELAY_P18			1000	// 1ms
 #define DELAY_P19			1		// 25ns
 #define DELAY_P20			25000	// 25ms
@@ -655,11 +655,13 @@ void dspic33epxxgs50x::read(char *outfile, uint32_t start, uint32_t count)
 /* Write contents of the .hex file to the PIC */
 void dspic33epxxgs50x::write(char *infile)
 {
-	uint16_t i,j,p;
+	uint16_t i;
 	uint16_t k;
 	bool skip;
 	uint32_t data[8],raw_data[6];
 	uint32_t addr = 0;
+	uint16_t hbyte = 0, lbyte = 0;
+	uint32_t config_data = 0;
 
 	unsigned int filled_locations=1;
 
@@ -858,7 +860,7 @@ void dspic33epxxgs50x::write(char *infile)
 
 	delay_us(100000);
 
-	/* WRITE CONFIGURATION REGISTERS */
+	/* WRITE CONFIGURATION WORDS */
 	if(flags.debug)
 		cerr << endl << "Writing Configuration registers..." << endl;
 
@@ -955,9 +957,7 @@ void dspic33epxxgs50x::write(char *infile)
 
 	delay_us(100000);
 
-	// TODO
-
-	/* VERIFY CODE MEMORY */
+	/***** VERIFY CODE MEMORY *****/
 	if(!flags.noverify){
 		if(!flags.debug) cerr << "[ 0%]";
 		if(flags.client) fprintf(stdout, "@000");
@@ -1084,6 +1084,52 @@ void dspic33epxxgs50x::write(char *infile)
 			}
 		}
 
+		/***** VERIFY CONFIGURATION WORDS *****/
+		for(unsigned short i=0; i<8; i++)
+		{
+			send_nop();
+			send_nop();
+			send_nop();
+			reset_pc();
+			send_nop();
+			send_nop();
+			send_nop();
+
+			send_cmd(0x200000 | ((config_addr[i] & 0x00FF0000) >> 12) );
+			send_cmd(0x20F887);
+			send_cmd(0x8802A0);
+			send_cmd(0x200006 | ((0x0000FFFF & config_addr[i]) << 4));
+			send_nop();
+
+			send_cmd(0xBA8B96);
+			send_nop();
+			send_nop();
+			send_nop();
+			send_nop();
+			send_nop();
+			hbyte = read_data();
+
+			send_cmd(0xBA0B96);
+			send_nop();
+			send_nop();
+			send_nop();
+			send_nop();
+			send_nop();
+			lbyte = read_data();
+
+			config_data = (hbyte << 16) | lbyte;
+
+			if(flags.debug)
+				fprintf(stderr,"\n - %s: 0x%02x", regname[i], (hbyte << 16)|lbyte);
+
+			if(mem.filled[config_addr[i]] && config_data != mem.location[config_addr[i]])
+			{
+				fprintf(stderr,"\n\n ERROR at config address %06X: written %04X but %04X read!\n\n",
+								config_addr[i], mem.location[config_addr[i]], config_data);
+				return;
+			}
+		}
+
 		if(!flags.debug) cerr << "\b\b\b\b\b";
 		if(flags.client) fprintf(stdout, "@FIN");
 	}
@@ -1095,43 +1141,48 @@ void dspic33epxxgs50x::write(char *infile)
 /* write to screen the configuration registers, without saving them anywhere */
 void dspic33epxxgs50x::dump_configuration_registers(void)
 {
-	const char *regname[] = {"FGS","FOSCSEL","FOSC","FWDT","FPOR",
-							"FICD","FAS","FUID0"};
+	const char *regname[] = {"FSEC","FBSLIM","FOSCSEL","FOSC","FWDT","FICD", "FDEVOPT", "FALTREG"};
+	const int config_addr[] = {0x005780, 0x005790, 0x005798, 0x00579C, 0x0057A0, 0x0057A8, 0x0057AC, 0x0057B0};
+	uint16_t hbyte = 0, lbyte = 0;
 
 	cerr << endl << "Configuration registers:" << endl << endl;
 
-	send_nop();
-	send_nop();
-	send_nop();
-	reset_pc();
-	send_nop();
-	send_nop();
-	send_nop();
+	for(unsigned short i=0; i<8; i++)
+	{
 
-	send_cmd(0x200F80);
-	send_cmd(0x8802A0);
-	send_cmd(0x200046);
-	send_cmd(0x20F887);
-	send_nop();
+		send_nop();
+		send_nop();
+		send_nop();
+		reset_pc();
+		send_nop();
+		send_nop();
+		send_nop();
 
-	for(unsigned short i=0; i<8; i++){
-		send_cmd(0xBA0BB6);
+		send_cmd(0x200000 | ((config_addr[i] & 0x00FF0000) >> 12) );
+		send_cmd(0x20F887);
+		send_cmd(0x8802A0);
+		send_cmd(0x200006 | ((0x0000FFFF & config_addr[i]) << 4));
+		send_nop();
+
+		send_cmd(0xBA8B96);
 		send_nop();
 		send_nop();
 		send_nop();
 		send_nop();
 		send_nop();
-		fprintf(stderr," - %s: 0x%02x\n", regname[i], read_data());
+		hbyte = read_data();
+
+		send_cmd(0xBA0B96);
+		send_nop();
+		send_nop();
+		send_nop();
+		send_nop();
+		send_nop();
+		lbyte = read_data();
+
+		fprintf(stderr," - %s: 0x%02x\n", regname[i], (hbyte << 16)|lbyte);
 	}
 
 	cerr << endl;
-
-	send_nop();
-	send_nop();
-	send_nop();
-	reset_pc();
-	send_nop();
-	send_nop();
-	send_nop();
 }
 
