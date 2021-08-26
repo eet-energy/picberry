@@ -102,7 +102,8 @@ int main(int argc, char *argv[])
     int option_index = 0;
     int server_port = 15000;
     uint8_t retval = 0;
-
+    int return_code = 0;
+    
     static struct option long_options[] = {
             {"help",        no_argument,       0,           'h'},
             {"server",      required_argument, 0,           'S'},
@@ -119,7 +120,8 @@ int main(int argc, char *argv[])
             {"noverify",    no_argument,       &flags.noverify,     1},
             {"boot-only",   no_argument,       &flags.boot_only,    1},
             {"program-only",no_argument,       &flags.program_only, 1},
-	    {"fulldump",    no_argument,       &flags.fulldump,     1},
+            {"fulldump",    no_argument,       &flags.fulldump,     1},
+            {"unattended",  no_argument,       &flags.unattended,   1},
             {0, 0, 0, 0}
     };
 
@@ -182,7 +184,7 @@ int main(int argc, char *argv[])
 
     if (function & FXN_WRITE && !infile) {
         cout << "Please specify an input file!" << endl;
-        exit(1);
+        exit(2);
     }
 
     /* if not in log mode, disable stdout line buffering */
@@ -210,7 +212,7 @@ int main(int argc, char *argv[])
                     &pic_mclr_port, &pic_mclr)){
                         cout << "GPIO selection string not correctly formatted!"
                              << endl;
-                        exit(0);
+                        exit(3);
                     }
             pic_clk |= ((pic_clk_port-'A')*PORTOFFSET)<<8;
             pic_data |= ((pic_data_port-'A')*PORTOFFSET)<<8;
@@ -303,6 +305,7 @@ int main(int argc, char *argv[])
                 << "- pic32mx3" << endl
                 << "- pic32mz" << endl
                 << "- pic32mk" << endl;
+            return_code = 4;
             goto clean;
         }
 
@@ -355,12 +358,13 @@ int main(int argc, char *argv[])
 		    fprintf(stdout,"Device ID: 0x%x\n", pic ->device_id);
             cout << "ERROR: unknown/unsupported device "
                     "or programmer not connected." << endl;
+            return_code = 5;
         }
             
 
         pic->exit_program_mode();
         
-        if(!log){
+        if(!log && !flags.unattended){
             cout << "Press ENTER to exit program mode...";
             fgetc(stdin);
         }
@@ -376,7 +380,7 @@ clean:
 
     fclose(stderr);
     fclose(stdout);
-    return 0;
+    return return_code;
 }
 
 /* Set up a memory regions to access GPIO */
@@ -386,7 +390,7 @@ void setup_io(void)
     mem_fd = open("/dev/mem", O_RDWR|O_SYNC);
     if (mem_fd == -1) {
         perror("Cannot open /dev/mem");
-        exit(1);
+        exit(11);
     }
 
     /* mmap GPIO */
@@ -394,7 +398,7 @@ void setup_io(void)
                     MAP_SHARED, mem_fd, GPIO_BASE);
     if (gpio_map == MAP_FAILED) {
         perror("mmap() failed");
-        exit(1);
+        exit(12);
     }
 
     /* Always use volatile pointer! */
@@ -428,14 +432,14 @@ void close_io(void)
         ret = munmap(gpio_map, BLOCK_SIZE);
         if (ret == -1) {
             perror("munmap() failed");
-            exit(1);
+            exit(21);
         }
 
         /* close /dev/mem */
         ret = close(mem_fd);
         if (ret == -1) {
             perror("Cannot close /dev/mem");
-            exit(1);
+            exit(22);
         }
 }
 
@@ -477,6 +481,7 @@ void usage(void)
             "       --fulldump                            don't detect empty sections, make complete dump (PIC32)\n"
             "       --program-only                        read/write only program section (PIC32)\n"
             "       --boot-only                           read/write only boot section (PIC32)\n"
+            "       --unattended                          disable waiting for user interaction\n"
             "\n"
             "\n"
             "   Runtime Options\n"

@@ -67,6 +67,7 @@ struct flags_struct {
    int boot_only = 0;
    int program_only = 0;
    int fulldump = 0;
+   int unattended = 0;
 };
 
 extern struct flags_struct flags;

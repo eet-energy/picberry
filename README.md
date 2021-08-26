@@ -85,6 +85,7 @@ Programming Options
 	--fulldump                            don't detect empty sections, make complete dump (PIC32)
 	--program-only                        read/write only program section (PIC32)
 	--boot-only                           read/write only boot section (PIC32)
+	--unattended                          disable waiting for user interaction
 
 Runtime Options
 
