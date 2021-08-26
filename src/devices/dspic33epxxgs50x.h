@@ -47,5 +47,5 @@ class dspic33epxxgs50x : public Pic {
 		* DEVICES SECTION
 		*                       ID       NAME           	  MEMSIZE
 		*/
-		pic_device piclist[3] = {{0x4E12, "dsPIC33EP32GS504", 0x00577E}};
+		pic_device piclist[1] = {{0x4E12, "dsPIC33EP32GS504", 0x00577E}};
 };

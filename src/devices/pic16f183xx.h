@@ -48,7 +48,7 @@ class pic16f183xx : public Pic {
 		/*
 		 *                         ID       NAME             MEMSIZE
 		 */
-		pic_device piclist[16] = {{0x30A4, "PIC16F18326", 0x003FFF},
+		pic_device piclist[4] = {{0x30A4, "PIC16F18326", 0x003FFF},
 					  	{0x30A6, "PIC16LF18326", 0x003FFF},
 					  	{0x30A5, "PIC16F18346", 0x003FFF},
 					  	{0x30A7, "PIC16LF18346", 0x003FFF}};
