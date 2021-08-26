@@ -581,7 +581,7 @@ void pic24fjxxxxgx6xx::read(char *outfile, uint32_t start, uint32_t count)
 /* Write contents of the .hex file to the PIC */
 void pic24fjxxxxgx6xx::write(char *infile)
 {
-	uint16_t i,j,p;
+	uint16_t i;
 	uint16_t k;
 	bool skip;
 	uint32_t data[8], raw_data[6];

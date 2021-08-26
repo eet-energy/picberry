@@ -588,7 +588,6 @@ void pic24fxxklxxx::write(char *infile)
 	unsigned int filled_locations=1;
 
 	const char *regname[] = {"FBS","FBS","FGS","FOSCSEL","FOSC","FWDT","FPOR","FICD"};
-	const char config_offsets[] = {0, 4, 6, 8, 10, 12, 14};
 	
 	filled_locations = read_inhx(infile, &mem);
 	if (!filled_locations) return;
@@ -744,8 +743,6 @@ void pic24fxxklxxx::write(char *infile)
 			/* Load the Configuration register data to W6 */
 			send_cmd(0x200006 | ((0x0000FFFF & mem.location[addr]) << 4));
 			send_cmd(0x200007 | ((addr & 0x0000FFFF) << 4) ); // MOV #<CWxAddress15:0>, W7
-
-
 
 			/*
 			 * Write the Configuration register data to the write
@@ -903,8 +900,6 @@ void pic24fxxklxxx::write(char *infile)
 /* Write to screen the configuration registers, without saving them anywhere */
 void pic24fxxklxxx::dump_configuration_registers(void)
 {
-	uint32_t addr = 0xF80000;
-	
 	const char *regname[] = {"FBS","FGS","FOSCSEL","FOSC","FWDT","FPOR","FICD","FDS"};
 
 	cerr << endl << "Configuration registers:" << endl << endl;
