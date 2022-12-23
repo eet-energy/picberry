@@ -37,7 +37,7 @@
 
 using namespace std;
 
-#define VERSION "0.2"
+#define VERSION "0.3.0"
 
 /* Low-level functions */
 void delay_us(unsigned int howLong);
