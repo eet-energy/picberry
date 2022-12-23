@@ -454,7 +454,7 @@ void pic_reset(bool silent)
 
     GPIO_CLR(pic_mclr);     // remove VDD from MCLR pin
     delay_us(1500);
-    if(!flags.client && !silent){
+    if(!flags.client && !silent && !flags.unattended){
         cout << "Press any key to release the reset...";
         fgetc(stdin);
         cout << endl;
