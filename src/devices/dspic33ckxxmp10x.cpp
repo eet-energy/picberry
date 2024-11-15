@@ -67,7 +67,7 @@ void dspic33ckxxmp10x::send_cmd(uint32_t cmd)
 
 	GPIO_CLR(pic_data);
 
-	/* send the SIX = 0x0000 instruction */
+	/* send the SIX = 0x0000 instruction r*/
 	for (i = 0; i < 4; i++) {
 		GPIO_SET(pic_clk);
 		delay_us(DELAY_P1B);
@@ -251,7 +251,7 @@ bool dspic33ckxxmp10x::read_device_id(void)
 	send_nop();
 
 	device_id = read_data();
-	
+
 	reset_pc();
 	send_nop();
 
@@ -383,11 +383,11 @@ uint8_t dspic33ckxxmp10x::blank_check(void)
 
 		if(counter != addr*100/mem.code_memory_size){
 			counter = addr*100/mem.code_memory_size;
-			fprintf(stderr, "\b\b\b\b\b[%2d%%]", counter);	
+			fprintf(stderr, "\b\b\b\b\b[%2d%%]", counter);
 		}
 
 		for(i=0; i<8; i++){
-			if(flags.debug)			
+			if(flags.debug)
 				fprintf(stderr, "\n addr = 0x%06X data = 0x%04X",
 								(addr+i), data[i]);
 			if ((i%2 == 0 && data[i] != 0xFFFF) || (i%2 == 1 && data[i] != 0x00FF)) {
@@ -411,7 +411,7 @@ uint8_t dspic33ckxxmp10x::blank_check(void)
 	send_nop();
 	send_nop();
 	send_nop();
-	
+
 	return ret;
 }
 
@@ -453,7 +453,7 @@ void dspic33ckxxmp10x::bulk_erase(void)
 	do{
 		send_nop();
 		send_cmd(0x804680);
-		send_nop();		
+		send_nop();
 		send_cmd(0x887E60);
 		send_nop();
 		nvmcon = read_data();
@@ -465,7 +465,7 @@ void dspic33ckxxmp10x::bulk_erase(void)
 		send_nop();
 		send_nop();
 	} while((nvmcon & 0x8000) == 0x8000);
-	
+
 	if(flags.debug) cerr << "Finished erasing memory";
 	if(flags.client) fprintf(stdout, "@FIN");
 }
@@ -674,7 +674,10 @@ void dspic33ckxxmp10x::write(char *infile)
 	const int config_addr[] = {0x00AF00, 0x00AF10, 0x00AF18, 0x00AF1C, 0x00AF20, 0x00AF24, 0x00AF28, 0x00AF2C, 0x00AF30, 0x00AF34, 0x00AF38, 0x00AF3C, 0x00AF40, 0x00AF44};
 
 	filled_locations = read_inhx(infile, &mem);
-	if(!filled_locations) return;
+	if(!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	/****** ERASE CODE MEMORY ******/
 	bulk_erase();
@@ -702,7 +705,7 @@ void dspic33ckxxmp10x::write(char *infile)
 	counter=0;
 
 	for (addr = 0; addr < mem.code_memory_size; ){
-		
+
 		skip = 1;
 
 		for (k = 0; k < 4; k += 2)
@@ -1006,7 +1009,7 @@ void dspic33ckxxmp10x::write(char *infile)
 				if(mem.filled[addr+i] && data[i] != mem.location[addr+i]){
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 									addr+i, mem.location[addr+i], data[i]);
-					return;
+					exit(32);
 				}
 
 			}
@@ -1062,7 +1065,7 @@ void dspic33ckxxmp10x::write(char *infile)
 			{
 				fprintf(stderr,"\n\n ERROR at config address %06X: written %04X but %04X read!\n\n",
 								config_addr[i], mem.location[config_addr[i]], config_data);
-				return;
+				exit(33);
 			}
 		}
 
@@ -1121,4 +1124,3 @@ void dspic33ckxxmp10x::dump_configuration_registers(void)
 
 	cerr << endl;
 }
-
