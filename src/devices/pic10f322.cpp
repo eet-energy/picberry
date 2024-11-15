@@ -259,7 +259,7 @@ uint8_t pic10f322::blank_check(void)
 		addr++;
 		send_cmd(COMM_INC_ADDR, DELAY_TDLY);
 		send_cmd(COMM_READ_FROM_PROG, DELAY_TDLY);
-		
+
 		data = read_data() & 0x3FFF;
 
 		if (data != 0x3FFF) {
@@ -345,7 +345,7 @@ void pic10f322::read(char *outfile, uint32_t start, uint32_t count)
 		addr++;
 		send_cmd(COMM_INC_ADDR, DELAY_TDLY);
 		send_cmd(COMM_READ_FROM_PROG, DELAY_TDLY);
-		
+
 		if(detailed_subfamily == SF_PIC12F1822)
 			mask = 0x3703;
 		else if(detailed_subfamily == SF_PIC16LF1826)
@@ -486,7 +486,7 @@ void pic10f322::write(char *infile)
 			if ( (data != mem.location[addr]) & ( mem.filled[addr]) ) {
 				fprintf(stderr, "Error at addr = 0x%06X:  pic = 0x%04X, file = 0x%04X.\nExiting...",
 						addr, data, mem.location[addr]);
-				return;
+				exit(32);
 			}
 			if(lcounter != addr*100/mem.code_memory_size){
 				lcounter = addr*100/mem.code_memory_size;
@@ -523,7 +523,7 @@ void pic10f322::write(char *infile)
 		if ( ( data != fileconf ) & ( mem.filled[addr] ) ) {
 			fprintf(stderr, "Error at addr = 0x%06X:  pic = 0x%04X, file = 0x%04X.\nExiting...",
 					addr, data, mem.location[addr] & mask);
-			return;
+			exit(32);
 		}
 
 		/* Config Word 2 */
@@ -532,7 +532,7 @@ void pic10f322::write(char *infile)
 			addr++;
 			send_cmd(COMM_INC_ADDR, DELAY_TDLY);
 			send_cmd(COMM_READ_FROM_PROG, DELAY_TDLY);
-			
+
 			if(detailed_subfamily == SF_PIC12F1822)
 				mask = 0x3703;
 			else if(detailed_subfamily == SF_PIC16LF1826)
@@ -544,7 +544,7 @@ void pic10f322::write(char *infile)
 			if ( ( data != fileconf ) & ( mem.filled[addr] ) ) {
 				fprintf(stderr, "Error at addr = 0x%06X:  pic = 0x%04X, file = 0x%04X.\nExiting...",
 						addr, data & mask, mem.location[addr] & mask);
-				return;
+				exit(32);
 			}
 		}
 

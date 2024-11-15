@@ -226,24 +226,24 @@ bool pic24fxxklxxx::read_device_id(void)
 	send_nop();
 
 
-	
+
 	send_cmd(0xBA0BB6); // TBLRDL [W6++], [W7]
  	send_nop();
 	send_nop();
-	device_id = read_data();	
+	device_id = read_data();
 	send_nop();
 
 
 	send_cmd(0xBA0BB6); // TBLRDL [W6++], [W7]
  	send_nop();
 	send_nop();
-	device_rev = read_data();	
+	device_rev = read_data();
 	send_nop();
 
 	/* Reset device internal PC */
 	reset_pc();
 	send_nop();
-	
+
 	for (unsigned short i = 0; i < sizeof(piclist)/sizeof(piclist[0]); i++) {
 		if (piclist[i].device_id == device_id) {
 			strcpy(name, piclist[i].name);
@@ -538,9 +538,9 @@ void pic24fxxklxxx::read(char *outfile, uint32_t start, uint32_t count)
 
 	/* READ CONFIGURATION REGISTERS */
 	addr = 0xF80000;
-	
-	
-	
+
+
+
 	/* Exit Reset vector */
 	send_nop();
 	reset_pc();
@@ -588,9 +588,12 @@ void pic24fxxklxxx::write(char *infile)
 	unsigned int filled_locations=1;
 
 	const char *regname[] = {"FBS","FBS","FGS","FOSCSEL","FOSC","FWDT","FPOR","FICD"};
-	
+
 	filled_locations = read_inhx(infile, &mem);
-	if (!filled_locations) return;
+	if (!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	bulk_erase();
 
@@ -877,7 +880,7 @@ void pic24fxxklxxx::write(char *infile)
 				if (mem.filled[addr + i] && data[i] != mem.location[addr + i]) {
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 						addr + i, mem.location[addr + i], data[i]);
-					return;
+					exit(32);
 				}
 			}
 

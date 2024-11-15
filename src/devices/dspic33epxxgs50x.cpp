@@ -252,7 +252,7 @@ bool dspic33epxxgs50x::read_device_id(void)
 	send_nop();
 
 	device_id = read_data();
-	
+
 	reset_pc();
 	send_nop();
 
@@ -384,11 +384,11 @@ uint8_t dspic33epxxgs50x::blank_check(void)
 
 		if(counter != addr*100/mem.code_memory_size){
 			counter = addr*100/mem.code_memory_size;
-			fprintf(stderr, "\b\b\b\b\b[%2d%%]", counter);	
+			fprintf(stderr, "\b\b\b\b\b[%2d%%]", counter);
 		}
 
 		for(i=0; i<8; i++){
-			if(flags.debug)			
+			if(flags.debug)
 				fprintf(stderr, "\n addr = 0x%06X data = 0x%04X",
 								(addr+i), data[i]);
 			if ((i%2 == 0 && data[i] != 0xFFFF) || (i%2 == 1 && data[i] != 0x00FF)) {
@@ -412,7 +412,7 @@ uint8_t dspic33epxxgs50x::blank_check(void)
 	send_nop();
 	send_nop();
 	send_nop();
-	
+
 	return ret;
 }
 
@@ -449,7 +449,7 @@ void dspic33epxxgs50x::bulk_erase(void)
 	do{
 		send_nop();
 		send_cmd(0x803940);
-		send_nop();		
+		send_nop();
 		send_cmd(0x887C40);
 		send_nop();
 		nvmcon = read_data();
@@ -461,7 +461,7 @@ void dspic33epxxgs50x::bulk_erase(void)
 		send_nop();
 		send_nop();
 	} while((nvmcon & 0x8000) == 0x8000);
-	
+
 	if(flags.debug) cerr << "Finished erasing memory";
 	if(flags.client) fprintf(stdout, "@FIN");
 }
@@ -669,7 +669,10 @@ void dspic33epxxgs50x::write(char *infile)
 	const int config_addr[] = {0x005780, 0x005790, 0x005798, 0x00579C, 0x0057A0, 0x0057A8, 0x0057AC, 0x0057B0};
 
 	filled_locations = read_inhx(infile, &mem);
-	if(!filled_locations) return;
+	if(!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	bulk_erase();
 
@@ -692,8 +695,8 @@ void dspic33epxxgs50x::write(char *infile)
 	send_cmd(0x8802AC);
 
 	// Load W0:W1 with the next two Configuration Words to program.
-	send_cmd(0x200000 | ((mem.location[addr] & 0x0000FFFF) << 4));	
-	send_cmd(0x200001 | ((mem.location[addr] & 0x00FF0000) >> 12) );	
+	send_cmd(0x200000 | ((mem.location[addr] & 0x0000FFFF) << 4));
+	send_cmd(0x200001 | ((mem.location[addr] & 0x00FF0000) >> 12) );
 
 	// Set the Write Pointer (W3) and load the write latches
 	send_cmd(0xEB0030);
@@ -772,7 +775,7 @@ void dspic33epxxgs50x::write(char *infile)
 	counter=0;
 
 	for (addr = 0; addr < mem.code_memory_size; ){
-		
+
 		skip = 1;
 
 		for (k = 0; k < 4; k += 2)
@@ -1070,7 +1073,7 @@ void dspic33epxxgs50x::write(char *infile)
 				if(mem.filled[addr+i] && data[i] != mem.location[addr+i]){
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 									addr+i, mem.location[addr+i], data[i]);
-					return;
+					exit(32);
 				}
 
 			}
@@ -1126,7 +1129,7 @@ void dspic33epxxgs50x::write(char *infile)
 			{
 				fprintf(stderr,"\n\n ERROR at config address %06X: written %04X but %04X read!\n\n",
 								config_addr[i], mem.location[config_addr[i]], config_data);
-				return;
+				exit(33);
 			}
 		}
 
@@ -1185,4 +1188,3 @@ void dspic33epxxgs50x::dump_configuration_registers(void)
 
 	cerr << endl;
 }
-

@@ -592,7 +592,10 @@ void pic24fjxxxxgx6xx::write(char *infile)
 	const char *regname[] = {"FSEC","FBSLIM", "FSIGN", "FOSCSEL", "FOSC", "FWDT", "FPOR", "FICD", "FDEVOPT"};
 
 	filled_locations = read_inhx(infile, &mem);
-	if (!filled_locations) return;
+	if (!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	bulk_erase();
 
@@ -613,7 +616,7 @@ void pic24fjxxxxgx6xx::write(char *infile)
 	counter = 0;
 
 	for (addr = 0; addr < mem.code_memory_size; ){
-		
+
 		skip = 1;
 
 		for (k = 0; k < 4; k += 2)
@@ -696,7 +699,7 @@ void pic24fjxxxxgx6xx::write(char *infile)
 	if (flags.client) fprintf(stdout, "@100");
 
 	delay_us(100000);
-	
+
 	/* WRITE CONFIGURATION REGISTERS */
 	if (flags.debug)
 		cerr << endl << "Writing Configuration registers..." << endl;
@@ -712,7 +715,7 @@ void pic24fjxxxxgx6xx::write(char *infile)
 	send_cmd(0x200FAC); // MOV #0xFA, W12
 	send_cmd(0x8802AC); // MOV W12, TBLPAG
 
-	for (i = 0; i < 9; i++) 
+	for (i = 0; i < 9; i++)
 	{
 		addr = cword_address[i];
 
@@ -732,10 +735,10 @@ void pic24fjxxxxgx6xx::write(char *infile)
 			send_cmd(0xBBDBB6);	// TBLWTH.B [W6++], [W7++]
 			send_nop();
 			send_nop();
-			send_cmd(0xBBEBB6);	// TBLWTH.B [W6++], [++W7] 
+			send_cmd(0xBBEBB6);	// TBLWTH.B [W6++], [++W7]
 			send_nop();
 			send_nop();
-			send_cmd(0xBB1BB6);	// TBLWTL.W [W6++], [W7++] 
+			send_cmd(0xBB1BB6);	// TBLWTL.W [W6++], [W7++]
 			send_nop();
 			send_nop();
 
@@ -827,7 +830,7 @@ void pic24fjxxxxgx6xx::write(char *infile)
 			send_cmd(0xBADBB6); 			// TBLRDH.B [W6++], [W7++]
 			send_nop();
 			send_nop();
-			
+
 			send_cmd(0xBAD3D6); 			// TBLRDH.B [++W6], [W7--]
 			send_nop();
 			send_nop();
@@ -856,7 +859,7 @@ void pic24fjxxxxgx6xx::write(char *infile)
 				if (mem.filled[addr + i] && data[i] != mem.location[addr + i]) {
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 						addr + i, mem.location[addr + i], data[i]);
-					return;
+					exit(32);
 				}
 			}
 

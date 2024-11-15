@@ -286,7 +286,7 @@ void pic16f183xx::bulk_erase(void)
 void pic16f183xx::read(char *outfile, uint32_t start, uint32_t count)
 {
 	fprintf(stderr, "\nERROR: Read Chip is not implemented!\n");
-	return;
+	exit(99);
 }
 
 /* Bulk erase the chip, and then write contents of the .hex file to the PIC */
@@ -395,7 +395,7 @@ void pic16f183xx::write(char *infile)
 			if ( (data != mem.location[addr]) & ( mem.filled[addr]) ) {
 				fprintf(stderr, "Error at addr = 0x%06X:  pic = 0x%04X, file = 0x%04X.\nExiting...",
 						addr, data, mem.location[addr]);
-				return;
+				exit(32);
 			}
 			if(lcounter != addr*100/mem.code_memory_size){
 				lcounter = addr*100/mem.code_memory_size;
@@ -405,7 +405,7 @@ void pic16f183xx::write(char *infile)
 					fprintf(stderr,"\b\b\b\b\b[%2d%%]", lcounter);
 			}
 		}
-	
+
 
 		/* Read Confuguration Registers */
 		set_address(0x8007);
@@ -420,7 +420,7 @@ void pic16f183xx::write(char *infile)
 			if ( ( data != fileconf ) & ( mem.filled[addr+i] ) ) {
 				fprintf(stderr, "Error at fuse addr = 0x%06X:  pic = 0x%04X, file = 0x%04X.\nExiting...",
 						addr+i, data, mem.location[addr+i] & mask);
-				return;
+				exit(34);
 			}
 			send_cmd(COMM_INC_ADDR, DELAY_TDLY);
 		}
@@ -443,5 +443,5 @@ void pic16f183xx::write(char *infile)
 void pic16f183xx::dump_configuration_registers(void)
 {
 	fprintf(stderr, "\nERROR: Dump config register is not implemented!\n");
-	return;
+	exit(99);
 }

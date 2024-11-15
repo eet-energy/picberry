@@ -255,7 +255,7 @@ bool dspic33e::read_device_id(void)
 	send_nop();
 	send_nop();
 	device_rev = read_data();
-	
+
 	reset_pc();
 	send_nop();
 
@@ -387,11 +387,11 @@ uint8_t dspic33e::blank_check(void)
 
 		if(counter != addr*100/mem.code_memory_size){
 			counter = addr*100/mem.code_memory_size;
-			fprintf(stderr, "\b\b\b\b\b[%2d%%]", counter);	
+			fprintf(stderr, "\b\b\b\b\b[%2d%%]", counter);
 		}
 
 		for(i=0; i<8; i++){
-			if(flags.debug)			
+			if(flags.debug)
 				fprintf(stderr, "\n addr = 0x%06X data = 0x%04X",
 								(addr+i), data[i]);
 			if ((i%2 == 0 && data[i] != 0xFFFF) || (i%2 == 1 && data[i] != 0x00FF)) {
@@ -415,7 +415,7 @@ uint8_t dspic33e::blank_check(void)
 	send_nop();
 	send_nop();
 	send_nop();
-	
+
 	return ret;
 }
 
@@ -453,7 +453,7 @@ void dspic33e::bulk_erase(void)
 	/* wait while the erase operation completes */
 	do{
 		send_cmd(0x803940);
-		send_nop();		
+		send_nop();
 		send_cmd(0x887C40);
 		send_nop();
 		nvmcon = read_data();
@@ -465,7 +465,7 @@ void dspic33e::bulk_erase(void)
 		send_nop();
 		send_nop();
 	} while((nvmcon & 0x8000) == 0x8000);
-	
+
 	if(flags.client) fprintf(stdout, "@FIN");
 }
 
@@ -670,7 +670,10 @@ void dspic33e::write(char *infile)
 							"FICD","FAS","FUID0"};
 
 	filled_locations = read_inhx(infile, &mem);
-	if(!filled_locations) return;
+	if(!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	bulk_erase();
 
@@ -756,7 +759,7 @@ void dspic33e::write(char *infile)
 
 			addr = addr+8;
 		}
-		
+
 		/* Set the NVMCON to program 128 instruction words */
 		send_cmd(0x24002A);
 		send_cmd(0x88394A);
@@ -1000,7 +1003,7 @@ void dspic33e::write(char *infile)
 				if(mem.filled[addr+i] && data[i] != mem.location[addr+i]){
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 									addr+i, mem.location[addr+i], data[i]);
-					return;
+					exit(32);
 				}
 
 			}
@@ -1065,4 +1068,3 @@ void dspic33e::dump_configuration_registers(void)
 	send_nop();
 	send_nop();
 }
-

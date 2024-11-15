@@ -250,7 +250,7 @@ bool pic24fjxxxga1_gb1::read_device_id(void)
 	send_nop();
 
 
-	for (unsigned short i = 0; i < sizeof(piclist)/sizeof(piclist[0]); i++) {	
+	for (unsigned short i = 0; i < sizeof(piclist)/sizeof(piclist[0]); i++) {
 		if (piclist[i].device_id == device_id) {
 			strcpy(name, piclist[i].name);
 			mem.code_memory_size = piclist[i].code_memory_size;
@@ -593,7 +593,10 @@ void pic24fjxxxga1_gb1::write(char *infile)
 	const char *regname[] = {"CW3","CW2","CW1"};
 
 	filled_locations = read_inhx(infile, &mem);
-	if (!filled_locations) return;
+	if (!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	bulk_erase();
 
@@ -879,7 +882,7 @@ void pic24fjxxxga1_gb1::write(char *infile)
 				if (mem.filled[addr + i] && data[i] != mem.location[addr + i]) {
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 						addr + i, mem.location[addr + i], data[i]);
-					return;
+					exit(32);
 				}
 			}
 

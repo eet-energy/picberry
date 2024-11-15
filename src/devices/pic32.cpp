@@ -138,73 +138,73 @@ void pic32::exit_program_mode(void)
 /* PSEUDO OPERATIONS */
 uint8_t pic32::Data4Phase(uint8_t tdi, uint8_t tms){
 	uint8_t tdo;
-	
+
 	// data pin to output
 	GPIO_OUT(pic_data);
-	
+
 	// write TDI - sampling is on the falling edge
 	if(tdi & 0x01)
 		GPIO_SET(pic_data);
 	else
-		GPIO_CLR(pic_data);	
-	
+		GPIO_CLR(pic_data);
+
 	GPIO_SET(pic_clk);
 	delay_us(DELAY_P1B);
 	GPIO_CLR(pic_clk);
 	delay_us(DELAY_P1A);
-	
+
 	// write TMS - sampling is on the falling edge
 	if(tms & 0x01)
 		GPIO_SET(pic_data);
 	else
-		GPIO_CLR(pic_data);	
-	
+		GPIO_CLR(pic_data);
+
 	GPIO_SET(pic_clk);
 	delay_us(DELAY_P1B);
 	GPIO_CLR(pic_clk);
 	delay_us(DELAY_P1A);
-	
+
 	// data pin to input
 	GPIO_CLR(pic_data);
 	GPIO_IN(pic_data);
-	
+
 	// "empty" clock pulse
 	GPIO_SET(pic_clk);
 	delay_us(DELAY_P1B);
 	GPIO_CLR(pic_clk);
 	delay_us(DELAY_P1A);
-	
+
 	// read TDO, sampling on the rising edge
 	GPIO_SET(pic_clk);
 	tdo = GPIO_LEV(pic_data);
 	delay_us(DELAY_P1B);
 	GPIO_CLR(pic_clk);
 	delay_us(DELAY_P1A);
-	
+
 	return (tdo & 0x01);
 }
 
 void pic32::Data2Phase(uint8_t tdi, uint8_t tms){
 	// data pin to output
 	GPIO_OUT(pic_data);
-	
+
 	// write TDI - sampling is on the falling edge
 	if(tdi & 0x01)
 		GPIO_SET(pic_data);
 	else
-		GPIO_CLR(pic_data);	
-	
+		GPIO_CLR(pic_data);
+
 	GPIO_SET(pic_clk);
 	delay_us(DELAY_P1B);
 	GPIO_CLR(pic_clk);
 	delay_us(DELAY_P1A);
-	
+
 	// write TMS - sampling is on the falling edge
 	if(tms & 0x01)
 		GPIO_SET(pic_data);
 	else
-		GPIO_CLR(pic_data);	
-	
+		GPIO_CLR(pic_data);
+
 	GPIO_SET(pic_clk);
 	delay_us(DELAY_P1B);
 	GPIO_CLR(pic_clk);
@@ -218,19 +218,19 @@ void pic32::SetMode(uint8_t length, uint8_t mode){
 
 void pic32::SendCommand(uint8_t command){
 	int i;
-	
+
 	// TMS header 1100 (TDI set to 0)
     Data4Phase(0, 1);
 	Data4Phase(0, 1);
 	Data4Phase(0, 0);
 	Data4Phase(0, 0);
-	
+
 	for(i=0; i < 4; i++)
 		Data4Phase((command >> i), 0);
-	
+
 	// Command MSb with TMS=1
 	Data4Phase((command >> i), 1);
-	
+
 	// TMS footer 10 (TDI set to 0)
     Data4Phase(0, 1);
 	Data4Phase(0, 0);
@@ -239,23 +239,23 @@ void pic32::SendCommand(uint8_t command){
 uint32_t pic32::XferData(uint8_t length, uint32_t iData){
 	int i;
 	uint32_t oData;
-	
+
 	// TMS header 100 (TDI set to 0)
     Data4Phase(0, 1);
 	Data4Phase(0, 0);
 	oData = Data4Phase(0, 0);
-	
+
 	// iData, LSb first, with TMS=0
 	for(i=0; i < length-1; i++)
 		oData |= Data4Phase((iData >> i), 0) << (i+1);
-	
+
 	// iData MSb with TMS=1
 	Data4Phase((iData >> i), 1);
-	
+
 	// TMS footer 10 (TDI set to 0)
     Data4Phase(0, 1);
 	Data4Phase(0, 0);
-	
+
 	return oData;
 }
 
@@ -266,20 +266,20 @@ void pic32::XferFastData2P(uint32_t iData){
     Data2Phase(0, 1);
 	Data2Phase(0, 0);
 	Data2Phase(0, 0);
-	
+
 	// prAcc
 	Data2Phase(0, 0);
-	
+
 	// iData, LSb first, with TMS=0
 	for(i=0; i < 31; i++)
 		Data2Phase((iData >> i), 0);
-	
+
 	// iData MSb with TMS=1
 	Data2Phase((iData >> i), 1);
-	
+
 	// TMS footer 10 (TDI set to 0)
     Data2Phase(0, 1);
-	Data2Phase(0, 0);	
+	Data2Phase(0, 0);
 }
 
 uint32_t pic32::XferFastData4P(uint32_t iData){
@@ -292,21 +292,21 @@ uint32_t pic32::XferFastData4P(uint32_t iData){
 		Data4Phase(0, 0);
 		i = Data4Phase(0, 0);
 	} while(!i);
-	
+
 	// prAcc
 	oData |= Data4Phase(0, 0);
-	
+
 	// iData, LSb first, with TMS=0
 	for(i=0; i < 31; i++)
 		oData |= Data4Phase((iData >> i), 0) << (i+1);
-	
+
 	// iData MSb with TMS=1
 	Data4Phase((iData >> i), 1);
-	
+
 	// TMS footer 10 (TDI set to 0)
     Data4Phase(0, 1);
 	Data4Phase(0, 0);
-	
+
 	return oData;
 }
 
@@ -358,12 +358,12 @@ uint32_t pic32::GetPEResponse(void){
 
 	// Wait until CPU is ready
 	SendCommand(ETAP_CONTROL);
-	
+
 	// Check if Processor Access bit (bit 18) is set
 	do {
 		response = XferData(32, 0x0004c000);
 	} while(!( (response >> 18) & 0x01 ));
-	
+
 	// Select Data Register
 	SendCommand(ETAP_DATA);
 	// Receive Response
@@ -379,11 +379,11 @@ bool pic32::check_device_status(void){
 	uint32_t statusVal = 0;
 	clock_t start;
 	bool timeout_avoided = true;
-	
+
 	SetMode(6, 0b011111);
 	SendCommand(MTAP_SW_MTAP);
 	SendCommand(MTAP_COMMAND);
-	
+
 	start = clock();
 	do{
 		statusVal = XferData(8, MCHP_STATUS);
@@ -396,7 +396,7 @@ bool pic32::check_device_status(void){
 
 void pic32::code_protected_bulk_erase(void){
 	uint32_t statusVal = 0;
-	
+
 	SendCommand(MTAP_SW_MTAP);
 	SendCommand(MTAP_COMMAND);
 	XferData(8, MCHP_ERASE);
@@ -412,7 +412,7 @@ void pic32::code_protected_bulk_erase(void){
 
 bool pic32::enter_serial_exec_mode(void){
 	uint32_t statusVal = 0;
-	
+
 	SendCommand(MTAP_SW_MTAP);
 	SendCommand(MTAP_COMMAND);
 	statusVal = XferData(8, MCHP_STATUS);
@@ -427,16 +427,16 @@ bool pic32::enter_serial_exec_mode(void){
 	if(subfamily == SF_PIC32MX1 || subfamily == SF_PIC32MX2 || subfamily == SF_PIC32MX3)
 		XferData(8, MCHP_FLASH_ENABLE);
 	SendCommand(MTAP_SW_ETAP);
-	
+
 	delay_us(1000);
-	
+
 	return true;
 }
 
 void pic32::download_pe(vector<uint32_t> pe_pointer){
-	
+
 	uint32_t i;
-	
+
 	if(subfamily == SF_PIC32MX1 || subfamily == SF_PIC32MX2 || subfamily == SF_PIC32MX3){
 		// PIC32MX devices only: Initialize BMXCON to 0x1F0040
 		XferInstruction(0x3c04bf88);
@@ -452,11 +452,11 @@ void pic32::download_pe(vector<uint32_t> pe_pointer){
 		XferInstruction(0xac850020);
 		XferInstruction(0xac850030);
 	}
-	
+
 	// Set up PIC32 RAM address for PE.
 	XferInstruction(0x3c04a000);
 	XferInstruction(0x34840800);
-	
+
 	// Load the PE_Loader
 	for(i=0;i<pe_loader.size();i++){
 		XferInstruction(0x3c060000 | (pe_loader[i] >> 16));
@@ -464,18 +464,18 @@ void pic32::download_pe(vector<uint32_t> pe_pointer){
 		XferInstruction(0xac860000);
 		XferInstruction(0x24840004);
 	};
-	
+
 	// Jump to the PE_Loader
 	XferInstruction(0x3c19a000);
 	XferInstruction(0x37390800);
 	XferInstruction(0x03200008);
 	XferInstruction(0x00000000);
-	
+
 	// Load the PE using the PE_Loader.
 	uint32_t pe_size = pe_pointer.size();
-	
+
 	SendCommand(ETAP_FASTDATA);
-	
+
 	XferFastData4P(PE_BASEADDR); 	// Address of PE program block
 	XferFastData4P(pe_size); // Number of 32-bit words of the program block from PE Hex file
 	for(i=0; i<pe_size; i++){
@@ -485,23 +485,23 @@ void pic32::download_pe(vector<uint32_t> pe_pointer){
 	// Jump to PE
 	XferFastData4P(0x00000000);
 	XferFastData4P(0xdead0000);
-	
+
 	XferFastData4P(PE_CMD_EXEC_VERSION);
 	GetPEResponse();
 }
 
 bool pic32::setup_pe(void){
-	
+
 	if(!check_device_status()){
         cerr << "Timeout occurred checking device status!" << endl;
         return false;
     }
-        
+
     if(!enter_serial_exec_mode()){
     	cerr << "Error entering serial exec mode!" << endl;
         return false;
     }
-	
+
 	switch(subfamily){
 		case SF_PIC32MX1:
 		case SF_PIC32MX2:
@@ -517,18 +517,18 @@ bool pic32::setup_pe(void){
 		default:
 			return false;
 	}
-	
+
 	return true;
 }
 
 bool pic32::read_device_id(void){
 	uint32_t rxp;
-	
+
 	bool found = false;
-	
+
 	SendCommand(ETAP_FASTDATA);
 	XferFastData4P(PE_CMD_READ | 0x01);
-	
+
 	switch(subfamily){
 		case SF_PIC32MX1:
 		case SF_PIC32MX2:
@@ -547,7 +547,7 @@ bool pic32::read_device_id(void){
 	rxp = GetPEResponse();
 	device_id = (rxp & 0x0FFFFFFF);
 	device_rev = (uint16_t)(rxp >> 28);
-	
+
 	for (unsigned short i=0;i < sizeof(piclist)/sizeof(piclist[0]);i++){
 
 		if (piclist[i].device_id == device_id){
@@ -560,7 +560,7 @@ bool pic32::read_device_id(void){
 			break;
 		}
 	}
-	
+
 	switch(subfamily){
 		case SF_PIC32MX1:
 		case SF_PIC32MX2:
@@ -584,14 +584,14 @@ bool pic32::read_device_id(void){
 			bootsize = 0x00000C00;
 			break;
 	}
-	
+
 	return found;
 }
 
 void pic32::bulk_erase(void){
-	
+
 	uint32_t rxp;
-	
+
 	SendCommand(ETAP_FASTDATA);
 	XferFastData4P(PE_CMD_CHIP_ERASE);
 	rxp = GetPEResponse();
@@ -622,7 +622,7 @@ void pic32::read(char *outfile, uint32_t start, uint32_t count){
 	uint32_t counter = 0, read_locations = 0, i = 0;
 	uint8_t area = PROGRAM_AREA;
 	uint32_t addr=0, startaddr = 0, stopaddr = 0;
-		
+
 	if(!flags.debug) cerr << "[ 0%]";
 	if(flags.client) fprintf(stdout, "@000");
 
@@ -631,7 +631,7 @@ void pic32::read(char *outfile, uint32_t start, uint32_t count){
 		total_to_read += bootsize;
 	if (!flags.boot_only)
 		total_to_read += programsize;
-	
+
 	do{
 		switch(area){
 			case PROGRAM_AREA:	// Read Program Flash (0x1D000000 to 0x1D000000+CodeMem)
@@ -649,22 +649,22 @@ void pic32::read(char *outfile, uint32_t start, uint32_t count){
 			default:
 				break;
 		}
-		
+
 		if(((area == PROGRAM_AREA) & !flags.boot_only) || ((area == BOOT_AREA) & !flags.program_only)){
-		
+
 			// addr is espressed in BYTES
 			uint32_t cur_blocksize;
 			for(addr=startaddr; addr<stopaddr; addr+=cur_blocksize){
 				cur_blocksize = std::min(stopaddr - addr , blocksize);
-				
+
 				SendCommand(ETAP_FASTDATA);
 				XferFastData4P(PE_CMD_READ | (cur_blocksize/4));
 				XferFastData4P(PROGRAM_FLASH_BASEADDR+addr);
-				
+
 				rxp = GetPEResponse();
 				if(rxp != PE_CMD_READ)
 					fprintf(stderr, "___ERR___: %08x\n", rxp);
-				
+
 				// i is expressed in BYTES
 				for(i=0; i < cur_blocksize; i+=4){
 					int word_addr = (addr + i) / 2;
@@ -675,7 +675,7 @@ void pic32::read(char *outfile, uint32_t start, uint32_t count){
 						mem.location[word_addr+1] = rxp >> 16;
 						mem.filled[word_addr+1] = 1;
 					}
-					
+
 					read_locations += 4;
 
 					uint32_t cur_counter = read_locations*100/total_to_read;
@@ -685,7 +685,7 @@ void pic32::read(char *outfile, uint32_t start, uint32_t count){
 							fprintf(stdout,"@%03d", counter);
 						if(!flags.debug)
 							fprintf(stderr,"\b\b\b\b\b[%2d%%]", counter);
-					}	
+					}
 				}
 			}
 		}
@@ -705,15 +705,18 @@ void pic32::write(char *infile){
 	bool skip = true;
 	uint32_t counter = 0;
 	uint32_t device_checksum = 0, calculated_checksum = 0;
-	
+
 	filled_locations = read_inhx(infile, &mem, PROGRAM_FLASH_BASEADDR);
-	if(!filled_locations) return;
-	
+	if(!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
+
 	bulk_erase();
-	
+
 	if(!flags.debug) cerr << "[ 0%]";
 	if(flags.client) fprintf(stdout, "@000");
-	
+
 	do{
 
 		switch(area){
@@ -728,11 +731,11 @@ void pic32::write(char *infile){
 			default:
 				break;
 		}
-		
+
 		if(((area == PROGRAM_AREA) & !flags.boot_only) || ((area == BOOT_AREA) & !flags.program_only)){
-	
+
 			for (addr = startaddr; addr < stopaddr; addr += rowsize){
-				
+
 				skip = true;
 				for(uint32_t i=0; i<rowsize; i++){
 					if(mem.filled[(addr+i)/2]){
@@ -744,11 +747,11 @@ void pic32::write(char *infile){
 					calculated_checksum += 0x000000FF*rowsize;
 					continue;
 				}
-				
+
 				SendCommand(ETAP_FASTDATA);
 				XferFastData4P(PE_CMD_ROW_PROGRAM);
 				XferFastData4P(PROGRAM_FLASH_BASEADDR+addr);
-				
+
 				for(uint32_t i=0; i<rowsize; i+=4){
 					if(mem.filled[(addr+i)/2]){
 						XferFastData4P((uint32_t)mem.location[(addr+i)/2] |
@@ -770,7 +773,7 @@ void pic32::write(char *infile){
 				rxp = GetPEResponse();
 				if(rxp != PE_CMD_ROW_PROGRAM)
 					fprintf(stderr, "___ERR___: %08x\n", rxp);
-					
+
 				if(counter != programmed_locations*100/filled_locations){
 					counter = programmed_locations*100/filled_locations;
 					if(flags.client)
@@ -782,10 +785,10 @@ void pic32::write(char *infile){
 		}
 		area++;
 	} while(area<=BOOT_AREA);
-	
+
 	if(!flags.debug) cerr << "\b\b\b\b\b\b";
 	if(flags.client) fprintf(stdout, "@FIN");
-	
+
 	// Checksum verification
 	// Program area checksum
 	SendCommand(ETAP_FASTDATA);
@@ -796,7 +799,7 @@ void pic32::write(char *infile){
 	if(rxp != PE_CMD_GET_CHECKSUM)
 		fprintf(stderr, "___ERR___: %08x\n", rxp);
 	device_checksum = GetPEResponse();
-	
+
 	// Boot area checksum
 	SendCommand(ETAP_FASTDATA);
 	XferFastData4P(PE_CMD_GET_CHECKSUM);
@@ -806,15 +809,15 @@ void pic32::write(char *infile){
 	if(rxp != PE_CMD_GET_CHECKSUM)
 		fprintf(stderr, "___ERR___: %08x\n", rxp);
 	device_checksum += GetPEResponse();
-	
+
 	if(calculated_checksum != device_checksum){
 		fprintf(stderr, "___CHECKSUM ERROR!___\n");
 		fprintf(stderr, "DEVICE CHECKSUM: %08x\n", device_checksum);
 		fprintf(stderr, "CALCULATED CHECKSUM: %08x\n", calculated_checksum);
 		if(flags.client) fprintf(stdout, "@ERR");
-		return;
+		exit(35);
 	}
-	
+
 	if(flags.client) fprintf(stdout, "@FIN");
 };
 void pic32::dump_configuration_registers(void){

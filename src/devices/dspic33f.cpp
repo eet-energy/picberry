@@ -341,7 +341,7 @@ uint8_t dspic33f::blank_check(void)
 	reset_pc();
 	reset_pc();
 	send_nop();
-	
+
 	return ret;
 }
 
@@ -528,7 +528,10 @@ void dspic33f::write(char *infile)
 								"FICD","FUID0","FUID1","FUID2","FUID3"};
 
 	filled_locations = read_inhx(infile, &mem);
-	if(!filled_locations) return;
+	if(!filled_locations) {
+		fprintf(stderr,"\n\n ERROR No filled locations!\n\n");
+		exit(31);
+	}
 
 	bulk_erase();
 
@@ -767,7 +770,7 @@ void dspic33f::write(char *infile)
 				if(mem.filled[addr+i] && data[i] != mem.location[addr+i]){
 					fprintf(stderr,"\n\n ERROR at address %06X: written %04X but %04X read!\n\n",
 									addr+i, mem.location[addr+i], data[i]);
-					return;
+					exit(32);
 				}
 
 			}
@@ -820,4 +823,3 @@ void dspic33f::dump_configuration_registers(void)
 	reset_pc();
 	send_nop();
 }
-

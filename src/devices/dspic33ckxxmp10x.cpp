@@ -67,7 +67,7 @@ void dspic33ckxxmp10x::send_cmd(uint32_t cmd)
 
 	GPIO_CLR(pic_data);
 
-	/* send the SIX = 0x0000 instruction r*/
+	/* send the SIX = 0x0000 instruction */
 	for (i = 0; i < 4; i++) {
 		GPIO_SET(pic_clk);
 		delay_us(DELAY_P1B);
